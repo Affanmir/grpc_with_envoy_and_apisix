@@ -63,7 +63,7 @@ class TestSampleService implements ISampleService {
   Future<void> getSampleById() async {
     try {
       _logger.d('starting getSampleById');
-      await _client.getSampleById(IdRequest(id: '213213')).then(
+      await _client.getSampleById(IdRequest(id: '35004493-eccb-4c54-8b90-aac342028e01')).then(
             (res) => {
               snackBar.showSnackbar(
                 message: '${res.info_.messageName} || ${res.sample.id}',

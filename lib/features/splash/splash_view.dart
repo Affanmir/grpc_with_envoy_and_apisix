@@ -24,10 +24,10 @@ class SplashView extends StatelessWidget {
               //   child: const Text('hitGrpcFailed'),
               // ),
               //
-              // TextButton(
-              //   onPressed: model.grpcHit,
-              //   child: const Text('hitGrpc'),
-              // ),
+              TextButton(
+                onPressed: model.grpcHit,
+                child: const Text('hitGrpc'),
+               ),
               // TextButton(
               //   onPressed: model.navigateToTodo,
               //   child: const Text('ToDos'),

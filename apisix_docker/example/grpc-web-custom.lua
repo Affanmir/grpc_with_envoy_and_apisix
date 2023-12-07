@@ -14,8 +14,6 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-
-
 local ngx               = ngx
 local ngx_arg           = ngx.arg
 local core              = require("apisix.core")
@@ -35,6 +33,13 @@ local DEFAULT_CORS_ALLOW_HEADERS = "content-type,x-grpc-web,x-user-agent,grpc-ac
 local DEFAULT_PROXY_CONTENT_TYPE = "application/grpc"
 local DEFAULT_CORS_ALLOW_EXPOSE_HEADERS = "grpc-status,grpc-message"
 
+local GRPC_WEB_TRAILER_FRAME_HEADER = string.char(128, 0, 0, 0)
+local GRPC_WEB_REQUIRED_TRAILERS_DEFAULT_VALUES = {
+    ["grpc-status"] = "0",
+    ["grpc-message"] = "OK"
+}
+
+local CRLF = "\r\n"
 
 local plugin_name = "grpc-web-custom"
 
@@ -127,32 +132,51 @@ function _M.header_filter(conf, ctx)
     if method == ALLOW_METHOD_OPTIONS then
         core.response.set_header("Access-Control-Allow-Methods", DEFAULT_CORS_ALLOW_METHODS)
         core.response.set_header("Access-Control-Allow-Headers", DEFAULT_CORS_ALLOW_HEADERS)
-        core.response.set_header("Access-Control-Expose-Headers", DEFAULT_CORS_ALLOW_EXPOSE_HEADERS)
     end
 
     if not ctx.cors_allow_origins then
         core.response.set_header("Access-Control-Allow-Origin", DEFAULT_CORS_ALLOW_ORIGIN)
     end
+
+    core.response.set_header("Access-Control-Expose-Headers", DEFAULT_CORS_ALLOW_EXPOSE_HEADERS)
     core.response.set_header("Content-Type", ctx.grpc_web_mime)
+    core.response.clear_header_as_body_modified()
 end
 
 function _M.body_filter(conf, ctx)
     -- If the MIME extension type description of the gRPC-Web standard is not obtained,
     -- indicating that the request is not based on the gRPC Web specification,
     -- the processing of the request body will be ignored
+    -- If response body is not empty, in-body trailers required by gRPC-Web are added to the end of response body
     -- https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md
     -- https://github.com/grpc/grpc-web/blob/master/doc/browser-features.md#cors-support
     if not ctx.grpc_web_mime then
         return
     end
 
+    local response = core.response.hold_body_chunk(ctx)
+    if response and string.len(response) ~= 0 then
+        local headers = ngx.resp.get_headers()
+        local trailers = " "
+
+        for trailer_key, trailer_default_value in pairs(GRPC_WEB_REQUIRED_TRAILERS_DEFAULT_VALUES) do
+            local trailer_value = headers[trailer_key]
+
+            if trailer_value == nil then
+                trailer_value = trailer_default_value
+            end
+
+            trailers = trailers .. trailer_key .. ":" .. trailer_value .. CRLF
+        end
+
+        response = response .. GRPC_WEB_TRAILER_FRAME_HEADER .. trailers
+        ngx_arg[1] = response
+    end
+
     if ctx.grpc_web_encoding == CONTENT_ENCODING_BASE64 then
         local chunk = ngx_arg[1]
         chunk = encode_base64(chunk)
         ngx_arg[1] = chunk
-        local chunk2 = ngx_arg[2]
-        chunk2 = encode_base64(chunk2)
-        ngx_arg[2] = chunk2
     end
 end
 
