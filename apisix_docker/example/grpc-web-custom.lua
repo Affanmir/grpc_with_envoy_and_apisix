@@ -122,8 +122,6 @@ function _M.access(conf, ctx)
         path = "/" .. path
     end
 
-    core.log.error("hey", path)
-
     req_set_uri(path)
 
     -- set grpc body
