@@ -160,6 +160,7 @@ function _M.header_filter(conf, ctx)
 
     core.response.set_header("Access-Control-Expose-Headers", DEFAULT_CORS_ALLOW_EXPOSE_HEADERS)
     core.response.set_header("Content-Type", ctx.grpc_web_mime)
+
     core.response.clear_header_as_body_modified()
 end
 
