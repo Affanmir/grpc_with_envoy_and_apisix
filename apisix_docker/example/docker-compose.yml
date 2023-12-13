@@ -32,7 +32,7 @@ services:
       apisix:
 
   apisix:
-    image: apache/apisix:${APISIX_IMAGE_TAG:-3.6.0-debian}
+    image: apache/apisix:${APISIX_IMAGE_TAG:-3.7.0-debian}
     #extra_lua_padth: "/usr/local/apisix/plugin/grpc-web-custom.lua"
     restart: always
     volumes:

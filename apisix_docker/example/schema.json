@@ -2893,34 +2893,6 @@
 			},
 			"priority": 21990
 		},
-		"grpc-web": {
-			"version": 0.1,
-			"schema": {
-				"properties": {
-					"_meta": {
-						"properties": {
-							"error_response": {
-								"oneOf": [{ "type": "string" }, { "type": "object" }]
-							},
-							"disable": { "type": "boolean" },
-							"filter": {
-								"type": "array",
-								"description": "filter determines whether the plugin needs to be executed at runtime"
-							},
-							"priority": {
-								"type": "integer",
-								"description": "priority of plugins by customized order"
-							}
-						},
-						"type": "object"
-					}
-				},
-				"$comment": "this is a mark for our injected plugin schema",
-				"type": "object"
-			},
-			"priority": 505
-		},
-
 		"grpc-web-custom": {
 			"version": 0.1,
 			"schema": {
@@ -2941,6 +2913,16 @@
 							}
 						},
 						"type": "object"
+					},
+					"strip_path": {
+						"description": "include prefix matched by path pattern in the path used for upstream call, appropriate for prefix matching pattern path patterns with the format <package>.<service>/*",
+						"type": "boolean",
+						"default": true
+					},
+					"enable_in_body_trailers_on_success": {
+						"description": "append standard grpc-web in-body trailers frame in response body",
+						"type": "boolean",
+						"default": true
 					}
 				},
 				"$comment": "this is a mark for our injected plugin schema",

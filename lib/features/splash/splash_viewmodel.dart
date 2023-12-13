@@ -23,6 +23,6 @@ class SplashViewModel extends BaseViewModel {
   }
   Future<void> grpcHit() async {
     // await testService.getIllegalArgumentException();
-    await testService.getSamples();
+    await testService.getIllegalArgumentException();
   }
 }
