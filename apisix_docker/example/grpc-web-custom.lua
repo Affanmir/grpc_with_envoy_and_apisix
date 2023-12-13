@@ -45,7 +45,19 @@ local plugin_name = "grpc-web-custom"
 
 local schema = {
     type = "object",
-    properties = {},
+    properties = {
+        strip_path = {
+            description = "include prefix matched by path pattern in the path used for upstream call,"
+                            .. "appropriate for prefix matching pattern path patterns with the format <package>.<service>/*",
+            type        = "boolean",
+            default     = true
+        },
+        enable_in_body_trailers_on_success = {
+            description = "append standard grpc-web in-body trailers frame in response body",
+            type        = "boolean",
+            default     = true
+        },
+    },
 }
 
 local grpc_web_content_encoding = {
@@ -99,10 +111,18 @@ function _M.access(conf, ctx)
         return 400
     end
 
-    local path = ctx.curr_req_matched[":ext"]
+    local path
+    if  conf.strip_path and ctx.curr_req_matched._path:byte(-1) == core.string.byte("*") and ctx.curr_req_matched[":ext"]:byte(1) ~= core.string.byte("/")  then
+        path = string.sub(ctx.curr_req_matched._path, 1, -2) .. ctx.curr_req_matched[":ext"]
+    else
+        path = ctx.curr_req_matched[":ext"]
+    end
+
     if path:byte(1) ~= core.string.byte("/") then
         path = "/" .. path
     end
+
+    core.log.error("hey", path)
 
     req_set_uri(path)
 
@@ -154,23 +174,25 @@ function _M.body_filter(conf, ctx)
         return
     end
 
-    local response = core.response.hold_body_chunk(ctx)
-    if response and string.len(response) ~= 0 then
-        local headers = ngx.resp.get_headers()
-        local trailers = " "
+    if conf.enable_in_body_trailers_on_success then
+        local response = core.response.hold_body_chunk(ctx)
+        if response and string.len(response) ~= 0 then
+            local headers = ngx.resp.get_headers()
+            local trailers = " "
 
-        for trailer_key, trailer_default_value in pairs(GRPC_WEB_REQUIRED_TRAILERS_DEFAULT_VALUES) do
-            local trailer_value = headers[trailer_key]
+            for trailer_key, trailer_default_value in pairs(GRPC_WEB_REQUIRED_TRAILERS_DEFAULT_VALUES) do
+                local trailer_value = headers[trailer_key]
 
-            if trailer_value == nil then
-                trailer_value = trailer_default_value
+                if trailer_value == nil then
+                    trailer_value = trailer_default_value
+                end
+
+                trailers = trailers .. trailer_key .. ":" .. trailer_value .. CRLF
             end
 
-            trailers = trailers .. trailer_key .. ":" .. trailer_value .. CRLF
+            response = response .. GRPC_WEB_TRAILER_FRAME_HEADER .. trailers
+            ngx_arg[1] = response
         end
-
-        response = response .. GRPC_WEB_TRAILER_FRAME_HEADER .. trailers
-        ngx_arg[1] = response
     end
 
     if ctx.grpc_web_encoding == CONTENT_ENCODING_BASE64 then

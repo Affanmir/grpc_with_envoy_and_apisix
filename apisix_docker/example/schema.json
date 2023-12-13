@@ -2913,6 +2913,16 @@
 							}
 						},
 						"type": "object"
+					},
+					"strip_path": {
+						"description": "include prefix matched by path pattern in the path used for upstream call, appropriate for prefix matching pattern path patterns with the format <package>.<service>/*",
+						"type": "boolean",
+						"default": true
+					},
+					"enable_in_body_trailers_on_success": {
+						"description": "append standard grpc-web in-body trailers frame in response body",
+						"type": "boolean",
+						"default": true
 					}
 				},
 				"$comment": "this is a mark for our injected plugin schema",
